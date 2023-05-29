@@ -7,19 +7,75 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F51CD6BC2A2504DF000BF5ED /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = F51CD6BB2A2504DF000BF5ED /* Shaders.metal */; };
+		F51CD6C02A251ECF000BF5ED /* Body.obj in Resources */ = {isa = PBXBuildFile; fileRef = F51CD6BF2A251ECF000BF5ED /* Body.obj */; };
 		F5DCEB3E2A24DFA400D4C0E7 /* RadialColorPickerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB3D2A24DFA400D4C0E7 /* RadialColorPickerApp.swift */; };
 		F5DCEB402A24DFA400D4C0E7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB3F2A24DFA400D4C0E7 /* ContentView.swift */; };
 		F5DCEB422A24DFA500D4C0E7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5DCEB412A24DFA500D4C0E7 /* Assets.xcassets */; };
 		F5DCEB462A24DFA500D4C0E7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5DCEB452A24DFA500D4C0E7 /* Preview Assets.xcassets */; };
+		F5DCEB4D2A24DFC700D4C0E7 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB4C2A24DFC700D4C0E7 /* Renderer.swift */; };
+		F5DCEB4F2A24E12C00D4C0E7 /* MTKViewContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB4E2A24E12C00D4C0E7 /* MTKViewContainer.swift */; };
+		F5DCEB512A24E25900D4C0E7 /* GPUDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB502A24E25900D4C0E7 /* GPUDevice.swift */; };
+		F5DCEB582A24EAD800D4C0E7 /* GeometryLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB572A24EAD800D4C0E7 /* GeometryLoader.swift */; };
+		F5DCEB602A24EB1C00D4C0E7 /* Matrix.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5DCEB5F2A24EB1400D4C0E7 /* Matrix.framework */; };
+		F5DCEB612A24EB1C00D4C0E7 /* Matrix.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F5DCEB5F2A24EB1400D4C0E7 /* Matrix.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		F5DCEB642A24EB8C00D4C0E7 /* ModelIOTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB632A24EB8C00D4C0E7 /* ModelIOTools.swift */; };
+		F5DCEB662A24F6E500D4C0E7 /* Projections.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB652A24F6E500D4C0E7 /* Projections.swift */; };
+		F5DCEB8C2A24FB4100D4C0E7 /* Transform.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5DCEB882A24FA9000D4C0E7 /* Transform.framework */; };
+		F5DCEB8D2A24FB4100D4C0E7 /* Transform.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F5DCEB882A24FA9000D4C0E7 /* Transform.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		F5DCEB5E2A24EB1400D4C0E7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F5DCEB5A2A24EB1400D4C0E7 /* Matrix.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F51B41202A114630007CD349;
+			remoteInfo = Matrix;
+		};
+		F5DCEB872A24FA9000D4C0E7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F5DCEB832A24FA9000D4C0E7 /* Transform.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F5DCEB712A24F93200D4C0E7;
+			remoteInfo = Transform;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F5DCEB622A24EB1C00D4C0E7 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				F5DCEB612A24EB1C00D4C0E7 /* Matrix.framework in Embed Frameworks */,
+				F5DCEB8D2A24FB4100D4C0E7 /* Transform.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		F51CD6BB2A2504DF000BF5ED /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		F51CD6BF2A251ECF000BF5ED /* Body.obj */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Body.obj; sourceTree = "<group>"; };
 		F5DCEB3A2A24DFA400D4C0E7 /* RadialColorPicker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RadialColorPicker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5DCEB3D2A24DFA400D4C0E7 /* RadialColorPickerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadialColorPickerApp.swift; sourceTree = "<group>"; };
 		F5DCEB3F2A24DFA400D4C0E7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		F5DCEB412A24DFA500D4C0E7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F5DCEB432A24DFA500D4C0E7 /* RadialColorPicker.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RadialColorPicker.entitlements; sourceTree = "<group>"; };
 		F5DCEB452A24DFA500D4C0E7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		F5DCEB4C2A24DFC700D4C0E7 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
+		F5DCEB4E2A24E12C00D4C0E7 /* MTKViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MTKViewContainer.swift; sourceTree = "<group>"; };
+		F5DCEB502A24E25900D4C0E7 /* GPUDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPUDevice.swift; sourceTree = "<group>"; };
+		F5DCEB522A24E41900D4C0E7 /* ShaderTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ShaderTypes.h; sourceTree = "<group>"; };
+		F5DCEB532A24E51700D4C0E7 /* RadialColorPicker-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RadialColorPicker-Bridging-Header.h"; sourceTree = "<group>"; };
+		F5DCEB572A24EAD800D4C0E7 /* GeometryLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeometryLoader.swift; sourceTree = "<group>"; };
+		F5DCEB5A2A24EB1400D4C0E7 /* Matrix.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Matrix.xcodeproj; path = ../Matrix/Matrix.xcodeproj; sourceTree = "<group>"; };
+		F5DCEB632A24EB8C00D4C0E7 /* ModelIOTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelIOTools.swift; sourceTree = "<group>"; };
+		F5DCEB652A24F6E500D4C0E7 /* Projections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Projections.swift; sourceTree = "<group>"; };
+		F5DCEB832A24FA9000D4C0E7 /* Transform.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Transform.xcodeproj; path = ../Transform/Transform.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -27,6 +83,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F5DCEB602A24EB1C00D4C0E7 /* Matrix.framework in Frameworks */,
+				F5DCEB8C2A24FB4100D4C0E7 /* Transform.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -38,6 +96,7 @@
 			children = (
 				F5DCEB3C2A24DFA400D4C0E7 /* RadialColorPicker */,
 				F5DCEB3B2A24DFA400D4C0E7 /* Products */,
+				F5DCEB592A24EB1400D4C0E7 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -52,11 +111,21 @@
 		F5DCEB3C2A24DFA400D4C0E7 /* RadialColorPicker */ = {
 			isa = PBXGroup;
 			children = (
+				F51CD6BF2A251ECF000BF5ED /* Body.obj */,
 				F5DCEB3D2A24DFA400D4C0E7 /* RadialColorPickerApp.swift */,
 				F5DCEB3F2A24DFA400D4C0E7 /* ContentView.swift */,
 				F5DCEB412A24DFA500D4C0E7 /* Assets.xcassets */,
 				F5DCEB432A24DFA500D4C0E7 /* RadialColorPicker.entitlements */,
 				F5DCEB442A24DFA500D4C0E7 /* Preview Content */,
+				F5DCEB4C2A24DFC700D4C0E7 /* Renderer.swift */,
+				F5DCEB4E2A24E12C00D4C0E7 /* MTKViewContainer.swift */,
+				F5DCEB502A24E25900D4C0E7 /* GPUDevice.swift */,
+				F5DCEB522A24E41900D4C0E7 /* ShaderTypes.h */,
+				F5DCEB532A24E51700D4C0E7 /* RadialColorPicker-Bridging-Header.h */,
+				F5DCEB572A24EAD800D4C0E7 /* GeometryLoader.swift */,
+				F5DCEB632A24EB8C00D4C0E7 /* ModelIOTools.swift */,
+				F5DCEB652A24F6E500D4C0E7 /* Projections.swift */,
+				F51CD6BB2A2504DF000BF5ED /* Shaders.metal */,
 			);
 			path = RadialColorPicker;
 			sourceTree = "<group>";
@@ -69,6 +138,31 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
+		F5DCEB592A24EB1400D4C0E7 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F5DCEB832A24FA9000D4C0E7 /* Transform.xcodeproj */,
+				F5DCEB5A2A24EB1400D4C0E7 /* Matrix.xcodeproj */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F5DCEB5B2A24EB1400D4C0E7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F5DCEB5F2A24EB1400D4C0E7 /* Matrix.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F5DCEB842A24FA9000D4C0E7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F5DCEB882A24FA9000D4C0E7 /* Transform.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -79,6 +173,7 @@
 				F5DCEB362A24DFA400D4C0E7 /* Sources */,
 				F5DCEB372A24DFA400D4C0E7 /* Frameworks */,
 				F5DCEB382A24DFA400D4C0E7 /* Resources */,
+				F5DCEB622A24EB1C00D4C0E7 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -101,6 +196,7 @@
 				TargetAttributes = {
 					F5DCEB392A24DFA400D4C0E7 = {
 						CreatedOnToolsVersion = 14.3;
+						LastSwiftMigration = 1430;
 					};
 				};
 			};
@@ -115,6 +211,16 @@
 			mainGroup = F5DCEB312A24DFA400D4C0E7;
 			productRefGroup = F5DCEB3B2A24DFA400D4C0E7 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = F5DCEB5B2A24EB1400D4C0E7 /* Products */;
+					ProjectRef = F5DCEB5A2A24EB1400D4C0E7 /* Matrix.xcodeproj */;
+				},
+				{
+					ProductGroup = F5DCEB842A24FA9000D4C0E7 /* Products */;
+					ProjectRef = F5DCEB832A24FA9000D4C0E7 /* Transform.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				F5DCEB392A24DFA400D4C0E7 /* RadialColorPicker */,
@@ -122,12 +228,30 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXReferenceProxy section */
+		F5DCEB5F2A24EB1400D4C0E7 /* Matrix.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Matrix.framework;
+			remoteRef = F5DCEB5E2A24EB1400D4C0E7 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		F5DCEB882A24FA9000D4C0E7 /* Transform.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Transform.framework;
+			remoteRef = F5DCEB872A24FA9000D4C0E7 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
 /* Begin PBXResourcesBuildPhase section */
 		F5DCEB382A24DFA400D4C0E7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				F5DCEB462A24DFA500D4C0E7 /* Preview Assets.xcassets in Resources */,
+				F51CD6C02A251ECF000BF5ED /* Body.obj in Resources */,
 				F5DCEB422A24DFA500D4C0E7 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -140,7 +264,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				F5DCEB402A24DFA400D4C0E7 /* ContentView.swift in Sources */,
+				F5DCEB642A24EB8C00D4C0E7 /* ModelIOTools.swift in Sources */,
+				F5DCEB4D2A24DFC700D4C0E7 /* Renderer.swift in Sources */,
 				F5DCEB3E2A24DFA400D4C0E7 /* RadialColorPickerApp.swift in Sources */,
+				F5DCEB662A24F6E500D4C0E7 /* Projections.swift in Sources */,
+				F5DCEB4F2A24E12C00D4C0E7 /* MTKViewContainer.swift in Sources */,
+				F51CD6BC2A2504DF000BF5ED /* Shaders.metal in Sources */,
+				F5DCEB582A24EAD800D4C0E7 /* GeometryLoader.swift in Sources */,
+				F5DCEB512A24E25900D4C0E7 /* GPUDevice.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,6 +392,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = RadialColorPicker/RadialColorPicker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -289,6 +421,8 @@
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "RadialColorPicker/RadialColorPicker-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -299,6 +433,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = RadialColorPicker/RadialColorPicker.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -327,6 +462,7 @@
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "RadialColorPicker/RadialColorPicker-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
