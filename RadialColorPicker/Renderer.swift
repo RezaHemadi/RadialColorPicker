@@ -602,7 +602,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
                     
                     if let point = samplePoint {
                         let blitEncoder = commandBuffer.makeBlitCommandEncoder()!
-                        blitEncoder.copy(from: view.currentDrawable!.texture,
+                        blitEncoder.copy(from: ribbonRenderTexture,
                                          sourceSlice: 0,
                                          sourceLevel: 0,
                                          sourceOrigin: MTLOrigin(x: Int(point.x), y: Int(point.y), z: 0),
