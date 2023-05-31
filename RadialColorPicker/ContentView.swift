@@ -8,18 +8,26 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State var renderer = Renderer()
+    @EnvironmentObject var renderer: Renderer
+    
+    var dragGesture: some Gesture {
+        DragGesture(minimumDistance: 0.0)
+            .onChanged { value in
+                renderer.samplePoint(value.location)
+            }
+    }
     
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(.gray)
-                .frame(width: 1000.0, height: 1000.0)
-            
+        VStack {
             MTKViewContainer(renderer: renderer)
                 .frame(width: 500.0, height: 500.0)
-                .padding()
+                .gesture(dragGesture)
+            SaturationSlider()
+                .frame(width: 400.0, height: 50.0)
+            BrightnessSlider()
+                .frame(width: 400.0, height: 50.0)
         }
+        .background(.gray)
     }
 }
 

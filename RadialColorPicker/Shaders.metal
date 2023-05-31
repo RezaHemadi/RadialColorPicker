@@ -10,6 +10,7 @@
 #include <simd/simd.h>
 using namespace metal;
 
+// MARK: - Rendering Body
 typedef struct {
     float3 position [[attribute(VertexAttributePosition)]];
     float3 normal [[attribute(VertexAttributeNormal)]];
@@ -62,4 +63,32 @@ float4 fragment fragmentShader(PassThroughVertex in [[stage_in]],
     float3 specularV = uniforms.lightColor * 0.5 * spec;
     
     return float4(diffuseColor + ambient + specularV, 1.0);
+}
+
+// MARK: - Rendering Ribbon
+typedef struct
+{
+    float3 position [[attribute(RibbonVertexAttributePosition)]];
+    float3 color    [[attribute(RibbonVertexAttributeColor)]];
+} RibbonVertex;
+
+typedef struct
+{
+    float4 position [[position]];
+    float3 color;
+} RibbonColorInOut;
+
+RibbonColorInOut vertex ribbonVertexShader(RibbonVertex in [[stage_in]],
+                                           constant RibbonUniforms& uniforms [[buffer(RibbonBufferIndexUniforms)]])
+{
+    RibbonColorInOut out;
+    out.position = uniforms.projection * float4(in.position, 1.0);
+    out.color = in.color;
+    
+    return out;
+}
+
+float4 fragment ribbonFragmentShader(RibbonColorInOut in [[stage_in]])
+{
+    return float4(in.color, 1.0);
 }

@@ -14,6 +14,8 @@ struct MTKViewContainer: UIViewRepresentable {
     
     func makeUIView(context: Context) -> MTKView {
         let view = MTKView()
+        view.framebufferOnly = false
+        (view.layer as! CAMetalLayer).allowsNextDrawableTimeout = false
         view.isOpaque = false
         view.colorPixelFormat = .bgra8Unorm
         view.depthStencilPixelFormat = .depth32Float_stencil8

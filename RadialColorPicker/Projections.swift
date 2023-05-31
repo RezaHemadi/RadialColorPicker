@@ -18,3 +18,10 @@ func matrix_perspective_left_hand(fovyRadians fovy: Float, aspectRatio: Float, n
                                      [0.0, 0.0, c, 1.0],
                                      [0.0, 0.0, e, 0.0]))
 }
+
+func matrix_orthographic_left_hand(left: Float, right: Float, top: Float, bottom: Float, near: Float, far: Float) -> matrix_float4x4 {
+    return matrix_float4x4.init([2.0 / (right - left), 0.0, 0.0, 0.0],
+                                [0.0, -2.0 / (bottom - top), 0.0, 0.0],
+                                [0.0, 0.0, 1.0 / (far - near), 0.0],
+                                [-(right + left) / (right - left), -(top + bottom) / (top - bottom), -near / (far - near), 1.0])
+}

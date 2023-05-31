@@ -17,12 +17,27 @@
 
 #include <simd/simd.h>
 
-typedef NS_ENUM(NSInteger, VertexAttribute) {
+typedef NS_ENUM(NSInteger, VertexAttribute)
+{
     VertexAttributePosition = 0,
     VertexAttributeNormal   = 1
 };
 
-typedef NS_ENUM(NSInteger, BufferIndex) {
+typedef NS_ENUM(NSInteger, RibbonVertexAttribute)
+{
+    RibbonVertexAttributePosition = 0,
+    RibbonVertexAttributeColor    = 1
+};
+
+typedef NS_ENUM(NSInteger, RibbonBufferIndex)
+{
+    RibbonBufferIndexPositions = 0,
+    RibbonBufferIndexColors    = 1,
+    RibbonBufferIndexUniforms  = 2
+};
+
+typedef NS_ENUM(NSInteger, BufferIndex)
+{
     BufferIndexMeshPositions = 0,
     BufferIndexUniforms      = 1
 };
@@ -37,5 +52,10 @@ typedef struct
     simd_float3 lightColor;
     simd_float3     color;
 } Uniforms;
+
+typedef struct
+{
+    matrix_float4x4 projection;
+} RibbonUniforms;
 
 #endif /* ShaderTypes_h */
