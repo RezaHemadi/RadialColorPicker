@@ -356,7 +356,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         r1VertexBuffer = device.makeBuffer(length: r1Polygon.vertices.count * MemoryLayout<Float>.size * kMaxBuffersInFlight)
         r1IndexBuffer = device.makeBuffer(bytes: r1Polygon.indices, length: MemoryLayout<UInt32>.size * r1IndexCount)
         
-        r2Polygon = .Circle(radius: r2, deltaTheta: deltaTheta)
+        r2Polygon = .CircularRibbon(lowerRadius: r2, upperRadius: r2 + 2.5, deltaTheta: deltaTheta)
         r2IndexCount = r2Polygon.indices.count
         r2VertexBuffer = device.makeBuffer(length: MemoryLayout<Float>.size * r2Polygon.vertices.count * kMaxBuffersInFlight)
         r2IndexBuffer = device.makeBuffer(bytes: r2Polygon.indices, length: MemoryLayout<UInt32>.size * r2IndexCount)
@@ -527,8 +527,14 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
                 shadowRenderEncoder.setVertexBuffer(shadowUniformsBuffer, offset: shadowUniformsBufferOffset, index: ShadowBufferIndex.uniforms.rawValue)
                 shadowRenderEncoder.setVertexBuffer(shadowInstanceUniformsBuffer, offset: shadowInstanceUniformsBufferOffset, index: ShadowBufferIndex.instanceUniforms.rawValue)
                 shadowRenderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: r1IndexCount, indexType: .uint32, indexBuffer: r1IndexBuffer, indexBufferOffset: 0, instanceCount: 2)
-                shadowRenderEncoder.endEncoding()
+                //shadowRenderEncoder.endEncoding()
                 
+                // render r2 shadow
+                shadowRenderEncoder.setVertexBuffer(r2VertexBuffer, offset: r2VertexBufferOffset, index: ShadowBufferIndex.positions.rawValue)
+                shadowRenderEncoder.setVertexBuffer(shadowUniformsBuffer, offset: shadowUniformsBufferOffset, index: ShadowBufferIndex.uniforms.rawValue)
+                shadowRenderEncoder.setVertexBuffer(shadowInstanceUniformsBuffer, offset: shadowInstanceUniformsBufferOffset, index: ShadowBufferIndex.instanceUniforms.rawValue)
+                shadowRenderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: r2IndexCount, indexType: .uint32, indexBuffer: r2IndexBuffer, indexBufferOffset: 0, instanceCount: 2)
+                shadowRenderEncoder.endEncoding()
                 
                 let blur = MPSImageGaussianBlur(device: GPUDevice.shared, sigma: 12.0)
                 let inPlaceTexture: UnsafeMutablePointer<MTLTexture> = .allocate(capacity: 1)
@@ -545,6 +551,12 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
                     shadowRenderEncoder.setVertexBuffer(shadowUniformsBuffer, offset: shadowUniformsBufferOffset, index: ShadowBufferIndex.uniforms.rawValue)
                     shadowRenderEncoder.setVertexBuffer(shadowInstanceUniformsBuffer, offset: shadowInstanceUniformsBufferOffset, index: ShadowBufferIndex.instanceUniforms.rawValue)
                     shadowRenderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: r1IndexCount, indexType: .uint32, indexBuffer: r1IndexBuffer, indexBufferOffset: 0, instanceCount: 1)
+                    //shadowRenderEncoder.endEncoding()
+                    
+                    shadowRenderEncoder.setVertexBuffer(r2VertexBuffer, offset: r2VertexBufferOffset, index: ShadowBufferIndex.positions.rawValue)
+                    shadowRenderEncoder.setVertexBuffer(shadowUniformsBuffer, offset: shadowUniformsBufferOffset, index: ShadowBufferIndex.uniforms.rawValue)
+                    shadowRenderEncoder.setVertexBuffer(shadowInstanceUniformsBuffer, offset: shadowInstanceUniformsBufferOffset, index: ShadowBufferIndex.instanceUniforms.rawValue)
+                    shadowRenderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: r2IndexCount, indexType: .uint32, indexBuffer: r2IndexBuffer, indexBufferOffset: 0, instanceCount: 1)
                     shadowRenderEncoder.endEncoding()
                 }
                 
