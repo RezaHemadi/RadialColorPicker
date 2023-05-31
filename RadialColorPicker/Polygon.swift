@@ -38,6 +38,54 @@ struct ColoredPolygon {
         return .init(vertices: vertices, indices: indices, colors: colors, deltaTheta: deltaTheta)
     }
     
+    /// angles are in radians
+    static func CircularRibbon(lowerRadius r1: Float, upperRadius r2: Float, startAngle: Float, endAngle: Float, deltaTheta: Float) -> Self {
+        assert(r1.isLess(than: r2))
+        assert(startAngle.isLess(than: endAngle))
+        
+        var vertices: [Float] = []
+        var indices: [UInt32] = []
+        var colors: [Float] = []
+        
+        let p2x: Float = r1 * cos(startAngle)
+        let p2y: Float = r1 * sin(startAngle)
+        
+        let p3x: Float = r2 * cos(startAngle)
+        let p3y: Float = r2 * sin(startAngle)
+        
+        vertices.append(contentsOf: [p2x, p2y, 0.0])
+        let col: [Float] = [0.0, 0.0, 0.0]
+        colors.append(contentsOf: col)
+        vertices.append(contentsOf: [p3x, p3y, 0.0])
+        colors.append(contentsOf: col)
+        
+        for angle in stride(from: (startAngle + deltaTheta), through: endAngle, by: deltaTheta) {
+            // we add two points on each iteration(p2, p3)
+            let p2x: Float = r1 * cos(angle)
+            let p2y: Float = r1 * sin(angle)
+            
+            let p3x: Float = r2 * cos(angle)
+            let p3y: Float = r2 * sin(angle)
+            
+            vertices.append(contentsOf: [p2x, p2y, 0.0])
+            let col: [Float] = [0.0, 0.0, 0.0]
+            colors.append(contentsOf: col)
+            vertices.append(contentsOf: [p3x, p3y, 0.0])
+            colors.append(contentsOf: col)
+            
+            let p3idx: UInt32 = UInt32(vertices.count / 3) - 1
+            let p2idx: UInt32 = p3idx - 1
+            let p1idx: UInt32 = p2idx - 1
+            let p0idx: UInt32 = p1idx - 1
+            
+            // add indices
+            indices.append(contentsOf: [p0idx, p1idx, p2idx])
+            indices.append(contentsOf: [p2idx, p1idx, p3idx])
+        }
+        
+        return .init(vertices: vertices, indices: indices, colors: colors, deltaTheta: deltaTheta)
+    }
+    
     static func CircularRibbon(lowerRadius r1: Float, upperRadius r2: Float, deltaTheta: Float) -> Self {
         guard r1.isLess(than: r2) else { fatalError() }
         
