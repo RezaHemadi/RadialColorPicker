@@ -53,7 +53,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     var transform: Transform = .init(transform: .init(eulerAngles: [0.0, 1.1 * Float.pi, 0.0]))
     
     // camera
-    var camera: Camera = .init(transform: .init(translationX: 0.055, translationY: 0.0, translationZ: -1.15))
+    var camera: Camera = .init(transform: .init(translationX: 0.040, translationY: 0.02, translationZ: -1.17))
     
     // light direction
     var lightDirection: simd_float3 = [-1.0, 1.0, -1.0]
@@ -72,7 +72,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     // ribbon polygon
     /// angle steps when constructing polygon and radial hsl colors
     let deltaTheta: Float = .pi / 30.0
-    let r1: Float = 4.2
+    let r1: Float = 3.9
     let r2: Float = 5.0
     var ribbon: ColoredPolygon!
     
