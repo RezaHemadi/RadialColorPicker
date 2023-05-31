@@ -14,6 +14,30 @@ struct ColoredPolygon {
     var colors: [Float]
     var deltaTheta: Float
     
+    static func Circle(radius: Float, deltaTheta: Float) -> Self {
+        var vertices: [Float] = []
+        var indices: [UInt32] = []
+        var colors: [Float] = []
+        
+        vertices.append(contentsOf: [0.0, 0.0, 0.0])
+        colors.append(contentsOf: [1.0, 0.0, 0.0])
+        
+        for angle in stride(from: 0.0, through: 2.0 * Float.pi, by: deltaTheta) {
+            let x = radius * cos(angle)
+            let y = radius * sin(angle)
+            
+            vertices.append(contentsOf: [x, y, 0.0])
+            colors.append(contentsOf: [1.0, 0.0, 0.0])
+        }
+        
+        // process indices
+        for i in 1..<(vertices.count - 1) {
+            indices.append(contentsOf: [0, UInt32(i), UInt32(i + 1)])
+        }
+        
+        return .init(vertices: vertices, indices: indices, colors: colors, deltaTheta: deltaTheta)
+    }
+    
     static func CircularRibbon(lowerRadius r1: Float, upperRadius r2: Float, deltaTheta: Float) -> Self {
         guard r1.isLess(than: r2) else { fatalError() }
         

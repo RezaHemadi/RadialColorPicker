@@ -82,7 +82,7 @@ RibbonColorInOut vertex ribbonVertexShader(RibbonVertex in [[stage_in]],
                                            constant RibbonUniforms& uniforms [[buffer(RibbonBufferIndexUniforms)]])
 {
     RibbonColorInOut out;
-    out.position = uniforms.projection * float4(in.position, 1.0);
+    out.position = uniforms.projection * uniforms.transform * float4(in.position, 1.0);
     out.color = in.color;
     
     return out;
@@ -92,3 +92,48 @@ float4 fragment ribbonFragmentShader(RibbonColorInOut in [[stage_in]])
 {
     return float4(in.color, 1.0);
 }
+
+// MARK: - Rendering Shadows
+typedef struct {
+    float3 position [[attribute(ShadowVertexAttributePosition)]];
+} ShadowVertex;
+
+typedef struct {
+    float4 position [[position]];
+    float4 color;
+} ShadowVertexInOut;
+
+ShadowVertexInOut vertex shadowVertexShader(ShadowVertex in [[stage_in]],
+                                            unsigned int instance_id [[instance_id]],
+                                            constant ShadowInstanceUniforms* instanceUniforms [[buffer(ShadowBufferIndexInstanceUniforms)]],
+                                            constant ShadowUniforms& uniforms [[buffer(ShadowBufferIndexUniforms)]])
+{
+    ShadowVertexInOut out;
+    out.position = uniforms.projection * instanceUniforms[instance_id].transform * float4(in.position, 1.0);
+    out.color = instanceUniforms[instance_id].color;
+    
+    return out;
+}
+
+float4 fragment shadowFragmentShader(ShadowVertexInOut in [[stage_in]])
+{
+    return float4(in.color);
+}
+
+// MARK: - Blend Kernel
+kernel void blendKernel(texture2d<float, access::read> shadowTexture [[texture(0)]], // shadow
+                        texture2d<float, access::read> ribbonTexture [[texture(1)]],
+                        texture2d<float, access::write> outTexture   [[texture(2)]],
+                        uint2 gid [[thread_position_in_grid]])
+{
+    float4 shadowPixel = shadowTexture.read(gid);
+    float4 ribbonPixel = ribbonTexture.read(gid);
+    
+    if (shadowPixel.w == 0.0) {
+        outTexture.write(ribbonPixel, gid);
+    } else {
+        float4 shadowedRibbon = shadowPixel * shadowPixel.w + (1.0 - shadowPixel.w) * ribbonPixel;
+        outTexture.write(float4(shadowedRibbon.xyz, 1.0), gid);
+    }
+}
+

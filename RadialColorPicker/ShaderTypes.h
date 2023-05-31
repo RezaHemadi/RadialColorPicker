@@ -42,6 +42,18 @@ typedef NS_ENUM(NSInteger, BufferIndex)
     BufferIndexUniforms      = 1
 };
 
+typedef NS_ENUM(NSInteger, ShadowVertexAttribute)
+{
+    ShadowVertexAttributePosition = 0
+};
+
+typedef NS_ENUM(NSInteger, ShadowBufferIndex)
+{
+    ShadowBufferIndexPositions        = 0,
+    ShadowBufferIndexInstanceUniforms = 1,
+    ShadowBufferIndexUniforms         = 2
+};
+
 typedef struct
 {
     matrix_float4x4 projectionMatrix;
@@ -56,6 +68,18 @@ typedef struct
 typedef struct
 {
     matrix_float4x4 projection;
+    matrix_float4x4 transform;
 } RibbonUniforms;
+
+typedef struct
+{
+    matrix_float4x4 projection;
+} ShadowUniforms;
+
+typedef struct
+{
+    matrix_float4x4 transform;
+    simd_float4     color;
+} ShadowInstanceUniforms;
 
 #endif /* ShaderTypes_h */

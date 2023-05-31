@@ -10,10 +10,13 @@ import MetalKit
 import Matrix
 import Transform
 import Combine
+import MetalPerformanceShaders
 
 let kMaxBuffersInFlight: Int = 3
 let kAlignedUniformsSize: Int = (MemoryLayout<Uniforms>.size & ~0xFF) + 0x100
 let kAlignedRibbonUniformsSize: Int = (MemoryLayout<RibbonUniforms>.size & ~0xFF) + 0x100
+let kAlignedShadowUniformsSize: Int = (MemoryLayout<ShadowUniforms>.size & ~0xFF) + 0x100
+let kAlignedShadowInstanceUniformsSize: Int = (MemoryLayout<ShadowInstanceUniforms>.size & ~0xFF) + 0x100
 
 class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     // MARK: - Properties
@@ -114,6 +117,44 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     
     var samplePoint: CGPoint?
     
+    // shadows
+    var shadowRenderState: MTLRenderPipelineState!
+    var shadowDepthState: MTLDepthStencilState!
+    
+    var r1Polygon: ColoredPolygon!
+    var r1IndexCount: Int!
+    var r1VertexBuffer: MTLBuffer!
+    var r1IndexBuffer: MTLBuffer!
+    var r1VertexBufferOffset: Int = 0
+    var r1VertexBufferAddress: UnsafeMutableRawPointer!
+    
+    var r2Polygon: ColoredPolygon!
+    var r2IndexCount: Int!
+    var r2VertexBuffer: MTLBuffer!
+    var r2IndexBuffer: MTLBuffer!
+    var r2VertexBufferOffset: Int = 0
+    var r2VertexBufferAddress: UnsafeMutableRawPointer!
+    
+    var shadowUniformsBuffer: MTLBuffer!
+    var shadowUniformsBufferOffset: Int!
+    var shadowUniformsBufferAddress: UnsafeMutableRawPointer!
+    
+    var shadowInstanceUniformsBuffer: MTLBuffer!
+    var shadowInstanceUniformsBufferOffset: Int = 0
+    var shadowInstanceUniformsAddress: UnsafeMutableRawPointer!
+    
+    var shadowTransform = Transform.init(translationX: 0.13, translationY: -0.13, translationZ: 0.9)
+    
+    var shadowTexture: MTLTexture!
+    var shadowDepthTexture: MTLTexture!
+    var shadowRenderPassDescriptor: MTLRenderPassDescriptor!
+    
+    var ribbonRenderTexture: MTLTexture!
+    var ribbonRenderPassDescriptor: MTLRenderPassDescriptor!
+    
+    // blend kernel
+    var blendKernelState: MTLComputePipelineState!
+    
     // MARK: - Initialization
     override init() {
         super.init()
@@ -168,6 +209,8 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         let fragmentShader = library.makeFunction(name: "fragmentShader")
         let ribbonVertexShader = library.makeFunction(name: "ribbonVertexShader")
         let ribbonFragmentShader = library.makeFunction(name: "ribbonFragmentShader")
+        let shadowVertexShader = library.makeFunction(name: "shadowVertexShader")
+        let shadowFragmentShader = library.makeFunction(name: "shadowFragmentShader")
         
         let vertexDescriptor = MTLVertexDescriptor()
         vertexDescriptor.attributes[VertexAttribute.position.rawValue].format = .float3
@@ -182,7 +225,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         
         let renderStateDescriptor = MTLRenderPipelineDescriptor()
         renderStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
-        /*
+        
         renderStateDescriptor.colorAttachments[0].isBlendingEnabled = true
         renderStateDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
         renderStateDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
@@ -190,7 +233,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         renderStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusBlendAlpha
         renderStateDescriptor.colorAttachments[0].alphaBlendOperation = .add
         renderStateDescriptor.isAlphaToOneEnabled = false
-        renderStateDescriptor.isAlphaToCoverageEnabled = true*/
+        //renderStateDescriptor.isAlphaToCoverageEnabled = true
         renderStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
         renderStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat
         renderStateDescriptor.vertexDescriptor = vertexDescriptor
@@ -240,8 +283,16 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         // initialize ribbon rendering state
         let ribbonRenderStateDescriptor = MTLRenderPipelineDescriptor()
         ribbonRenderStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
-        ribbonRenderStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
-        ribbonRenderStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat
+        /*
+        ribbonRenderStateDescriptor.colorAttachments[0].isBlendingEnabled = true
+        ribbonRenderStateDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
+        ribbonRenderStateDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
+        ribbonRenderStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
+        ribbonRenderStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
+        ribbonRenderStateDescriptor.colorAttachments[0].alphaBlendOperation = .add*/
+        //ribbonRenderStateDescriptor.isAlphaToOneEnabled = false
+        //ribbonRenderStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
+        //ribbonRenderStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat
         ribbonRenderStateDescriptor.vertexFunction = ribbonVertexShader
         ribbonRenderStateDescriptor.fragmentFunction = ribbonFragmentShader
         ribbonRenderStateDescriptor.vertexDescriptor = ribbonVertexDescriptor
@@ -256,10 +307,96 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         ribbonIndexCount = ribbon.indices.count
         
         // initialize sample buffer
-        let bytesPerPixel = 4
-        let bytesPerRow = bytesPerPixel * 1
-        let bytesPerImage = bytesPerRow * 1
-        sampleBuffer = device.makeBuffer(length: bytesPerImage * kMaxBuffersInFlight, options: .storageModeShared)
+        sampleBuffer = device.makeBuffer(length: 4 * kMaxBuffersInFlight, options: .storageModeShared)
+        
+        // initialize shadow render state
+        let shadowVertexDescriptor = MTLVertexDescriptor()
+        shadowVertexDescriptor.attributes[ShadowVertexAttribute.position.rawValue].format = .float3
+        shadowVertexDescriptor.attributes[ShadowVertexAttribute.position.rawValue].offset = 0
+        shadowVertexDescriptor.attributes[ShadowVertexAttribute.position.rawValue].bufferIndex = ShadowBufferIndex.positions.rawValue
+        shadowVertexDescriptor.layouts[ShadowBufferIndex.positions.rawValue].stride = MemoryLayout<Float>.size * 3
+        
+        let shadowRenderStateDescriptor = MTLRenderPipelineDescriptor()
+        shadowRenderStateDescriptor.vertexDescriptor = shadowVertexDescriptor
+        shadowRenderStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
+        shadowRenderStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
+        shadowRenderStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat
+        /*
+        shadowRenderStateDescriptor.colorAttachments[0].isBlendingEnabled = true
+        shadowRenderStateDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
+        shadowRenderStateDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
+        shadowRenderStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
+        shadowRenderStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusBlendAlpha
+        shadowRenderStateDescriptor.colorAttachments[0].alphaBlendOperation = .add
+        shadowRenderStateDescriptor.isAlphaToOneEnabled = false*/
+        shadowRenderStateDescriptor.vertexFunction = shadowVertexShader
+        shadowRenderStateDescriptor.fragmentFunction = shadowFragmentShader
+        
+        shadowRenderState = try device.makeRenderPipelineState(descriptor: shadowRenderStateDescriptor)
+        shadowDepthState = device.makeDepthStencilState(descriptor: depthDesc)
+        
+        let ribbonRenderTextureDescriptor = MTLTextureDescriptor()
+        ribbonRenderTextureDescriptor.usage = [.renderTarget, .shaderRead]
+        ribbonRenderTextureDescriptor.pixelFormat = view.colorPixelFormat
+        ribbonRenderTextureDescriptor.width = 1000
+        ribbonRenderTextureDescriptor.height = 1000
+        ribbonRenderTextureDescriptor.textureType = .type2D
+        ribbonRenderTexture = device.makeTexture(descriptor: ribbonRenderTextureDescriptor)
+        
+        let ribbonRenPassDesc = MTLRenderPassDescriptor()
+        ribbonRenPassDesc.colorAttachments[0].texture = ribbonRenderTexture
+        ribbonRenPassDesc.colorAttachments[0].loadAction = .clear
+        ribbonRenPassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0)
+        ribbonRenPassDesc.colorAttachments[0].storeAction = .store
+        ribbonRenderPassDescriptor = ribbonRenPassDesc
+        
+        // initialize shadow rendering buffers
+        r1Polygon = .Circle(radius: r1, deltaTheta: deltaTheta)
+        r1IndexCount = r1Polygon.indices.count
+        r1VertexBuffer = device.makeBuffer(length: r1Polygon.vertices.count * MemoryLayout<Float>.size * kMaxBuffersInFlight)
+        r1IndexBuffer = device.makeBuffer(bytes: r1Polygon.indices, length: MemoryLayout<UInt32>.size * r1IndexCount)
+        
+        r2Polygon = .Circle(radius: r2, deltaTheta: deltaTheta)
+        r2IndexCount = r2Polygon.indices.count
+        r2VertexBuffer = device.makeBuffer(length: MemoryLayout<Float>.size * r2Polygon.vertices.count * kMaxBuffersInFlight)
+        r2IndexBuffer = device.makeBuffer(bytes: r2Polygon.indices, length: MemoryLayout<UInt32>.size * r2IndexCount)
+        shadowUniformsBuffer = device.makeBuffer(length: kAlignedShadowUniformsSize * kMaxBuffersInFlight)
+        
+        shadowInstanceUniformsBuffer = device.makeBuffer(length: kAlignedShadowInstanceUniformsSize * 2 * kMaxBuffersInFlight)
+        
+        // Initialize shadow texture
+        let shadowTextureDescriptor = MTLTextureDescriptor()
+        shadowTextureDescriptor.usage = [.shaderRead, .renderTarget, .shaderWrite]
+        shadowTextureDescriptor.textureType = .type2D
+        shadowTextureDescriptor.width = 1000
+        shadowTextureDescriptor.height = 1000
+        shadowTextureDescriptor.pixelFormat = .bgra8Unorm
+        
+        shadowTexture = device.makeTexture(descriptor: shadowTextureDescriptor)
+        
+        let shadowDepthTextureDescriptor = MTLTextureDescriptor()
+        shadowDepthTextureDescriptor.usage = [.renderTarget]
+        shadowDepthTextureDescriptor.textureType = .type2D
+        shadowDepthTextureDescriptor.storageMode = .private
+        shadowDepthTextureDescriptor.width = 1000
+        shadowDepthTextureDescriptor.height = 1000
+        shadowDepthTextureDescriptor.pixelFormat = .depth32Float_stencil8
+        shadowDepthTexture = device.makeTexture(descriptor: shadowDepthTextureDescriptor)
+        
+        // initialize shadow render pass descriptor
+        let shadowRenPassDesc = MTLRenderPassDescriptor()
+        shadowRenPassDesc.colorAttachments[0].texture = shadowTexture
+        shadowRenPassDesc.depthAttachment.texture = shadowDepthTexture
+        shadowRenPassDesc.stencilAttachment.texture = shadowDepthTexture
+        shadowRenPassDesc.depthAttachment.loadAction = .clear
+        shadowRenPassDesc.depthAttachment.storeAction = .store
+        shadowRenPassDesc.colorAttachments[0].loadAction = .clear
+        shadowRenPassDesc.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 0.0)
+        
+        shadowRenderPassDescriptor = shadowRenPassDesc
+        
+        let blendFunction = library.makeFunction(name: "blendKernel")!
+        blendKernelState = try device.makeComputePipelineState(function: blendFunction)
     }
     
     func updateDynamicBuffer() {
@@ -282,6 +419,18 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         
         sampleBufferOffset = 4 * dynamicBufferIndex
         sampleBufferAddress = sampleBuffer.contents().advanced(by: sampleBufferOffset)
+        
+        r1VertexBufferOffset = r1Polygon.vertices.count * MemoryLayout<Float>.size * dynamicBufferIndex
+        r1VertexBufferAddress = r1VertexBuffer.contents().advanced(by: r1VertexBufferOffset)
+        
+        r2VertexBufferOffset = r2Polygon.vertices.count * MemoryLayout<Float>.size * dynamicBufferIndex
+        r2VertexBufferAddress = r2VertexBuffer.contents().advanced(by: r2VertexBufferOffset)
+        
+        shadowUniformsBufferOffset = kAlignedShadowUniformsSize * dynamicBufferIndex
+        shadowUniformsBufferAddress = shadowUniformsBuffer.contents().advanced(by: shadowUniformsBufferOffset)
+        
+        shadowInstanceUniformsBufferOffset = kAlignedShadowInstanceUniformsSize * 2 * dynamicBufferIndex
+        shadowInstanceUniformsAddress = shadowInstanceUniformsBuffer.contents().advanced(by: shadowInstanceUniformsBufferOffset)
     }
     
     func updateAppState() {
@@ -321,6 +470,22 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         ribbonColorsBufferAddress.assumingMemoryBound(to: Float.self).initialize(from: ribbon.colors, count: ribbon.colors.count)
         // update ribbon uniforms
         ribbonUniformsBufferAddress.assumingMemoryBound(to: RibbonUniforms.self).pointee.projection = ribbonProjectionMatrix
+        ribbonUniformsBufferAddress.assumingMemoryBound(to: RibbonUniforms.self).pointee.transform = Transform.init(translation: [0.0, 0.0, 0.2]).matrix
+        
+        // update r1 vertex buffer
+        r1VertexBufferAddress.assumingMemoryBound(to: Float.self).initialize(from: r1Polygon.vertices, count: r1Polygon.vertices.count)
+        
+        // update r2 vertex buffer
+        r2VertexBufferAddress.assumingMemoryBound(to: Float.self).initialize(from: r2Polygon.vertices, count: r2Polygon.vertices.count)
+        
+        // update shadow uniforms
+        shadowUniformsBufferAddress.assumingMemoryBound(to: ShadowUniforms.self).pointee.projection = ribbonProjectionMatrix
+        
+        // update shadow instance uniforms
+        shadowInstanceUniformsAddress.assumingMemoryBound(to: ShadowInstanceUniforms.self).pointee.color = [0.0, 0.0, 0.0, 0.0]
+        shadowInstanceUniformsAddress.assumingMemoryBound(to: ShadowInstanceUniforms.self).pointee.transform = Transform.init(translation: [0.0, 0.0, 0.8]).matrix
+        shadowInstanceUniformsAddress.assumingMemoryBound(to: ShadowInstanceUniforms.self).advanced(by: 1).pointee.color = [0.1, 0.1, 0.1, 0.5]
+        shadowInstanceUniformsAddress.assumingMemoryBound(to: ShadowInstanceUniforms.self).advanced(by: 1).pointee.transform = shadowTransform.matrix
     }
     
     // MARK: - MTKViewDelegate
@@ -351,50 +516,98 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
             updateDynamicBuffer()
             updateAppState()
             
-            if let renderPassDescriptor = view.currentRenderPassDescriptor, let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) {
-                renderEncoder.label = "Geometry Rendering"
+            shadowRenderPassDescriptor.colorAttachments[0].loadAction = .clear
+            if let shadowRenderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: shadowRenderPassDescriptor) {
+                // render r1 shadow
+                shadowRenderEncoder.setRenderPipelineState(shadowRenderState)
+                shadowRenderEncoder.setDepthStencilState(shadowDepthState)
+                shadowRenderEncoder.setFrontFacing(.counterClockwise)
+                shadowRenderEncoder.setCullMode(.back)
+                shadowRenderEncoder.setVertexBuffer(r1VertexBuffer, offset: r1VertexBufferOffset, index: ShadowBufferIndex.positions.rawValue)
+                shadowRenderEncoder.setVertexBuffer(shadowUniformsBuffer, offset: shadowUniformsBufferOffset, index: ShadowBufferIndex.uniforms.rawValue)
+                shadowRenderEncoder.setVertexBuffer(shadowInstanceUniformsBuffer, offset: shadowInstanceUniformsBufferOffset, index: ShadowBufferIndex.instanceUniforms.rawValue)
+                shadowRenderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: r1IndexCount, indexType: .uint32, indexBuffer: r1IndexBuffer, indexBufferOffset: 0, instanceCount: 2)
+                shadowRenderEncoder.endEncoding()
                 
+                
+                let blur = MPSImageGaussianBlur(device: GPUDevice.shared, sigma: 12.0)
+                let inPlaceTexture: UnsafeMutablePointer<MTLTexture> = .allocate(capacity: 1)
+                inPlaceTexture.initialize(to: shadowTexture)
+                blur.encode(commandBuffer: commandBuffer, inPlaceTexture: inPlaceTexture)
+                
+                shadowRenderPassDescriptor.colorAttachments[0].loadAction = .load
+                if let shadowRenderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: shadowRenderPassDescriptor) {
+                    shadowRenderEncoder.setRenderPipelineState(shadowRenderState)
+                    shadowRenderEncoder.setDepthStencilState(shadowDepthState)
+                    shadowRenderEncoder.setFrontFacing(.counterClockwise)
+                    shadowRenderEncoder.setCullMode(.back)
+                    shadowRenderEncoder.setVertexBuffer(r1VertexBuffer, offset: r1VertexBufferOffset, index: ShadowBufferIndex.positions.rawValue)
+                    shadowRenderEncoder.setVertexBuffer(shadowUniformsBuffer, offset: shadowUniformsBufferOffset, index: ShadowBufferIndex.uniforms.rawValue)
+                    shadowRenderEncoder.setVertexBuffer(shadowInstanceUniformsBuffer, offset: shadowInstanceUniformsBufferOffset, index: ShadowBufferIndex.instanceUniforms.rawValue)
+                    shadowRenderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: r1IndexCount, indexType: .uint32, indexBuffer: r1IndexBuffer, indexBufferOffset: 0, instanceCount: 1)
+                    shadowRenderEncoder.endEncoding()
+                }
                 
                 // render ribbon
-                renderEncoder.setRenderPipelineState(ribbonRenderState)
-                renderEncoder.setVertexBuffer(ribbonVertexBuffer, offset: ribbonVertexBufferOffset, index: RibbonBufferIndex.positions.rawValue)
-                renderEncoder.setVertexBuffer(ribbonColorsBuffer, offset: ribbonColorsBufferOffset, index: RibbonBufferIndex.colors.rawValue)
-                renderEncoder.setVertexBuffer(ribbonUniformsBuffer, offset: ribbonUniformsBufferOffset, index: RibbonBufferIndex.uniforms.rawValue)
-                renderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: ribbonIndexCount, indexType: .uint32, indexBuffer: ribbonIndexBuffer, indexBufferOffset: 0)
-                
-                // render body
-                renderEncoder.setRenderPipelineState(renderState)
-                renderEncoder.setCullMode(.back)
-                renderEncoder.setFrontFacing(.counterClockwise)
-                renderEncoder.setDepthStencilState(depthState)
-                renderEncoder.setVertexBuffer(vertexBuffer, offset: vertexBufferOffset, index: BufferIndex.meshPositions.rawValue)
-                renderEncoder.setVertexBuffer(uniformsBuffer, offset: uniformsBufferOffset, index: BufferIndex.uniforms.rawValue)
-                renderEncoder.setFragmentBuffer(uniformsBuffer, offset: uniformsBufferOffset, index: BufferIndex.uniforms.rawValue)
-                renderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: indexCount, indexType: .uint32, indexBuffer: indexBuffer, indexBufferOffset: 0)
-                
-                renderEncoder.popDebugGroup()
-                renderEncoder.endEncoding()
-                
-                if let point = samplePoint {
-                    let blitEncoder = commandBuffer.makeBlitCommandEncoder()!
-                    blitEncoder.copy(from: view.currentDrawable!.texture,
-                                     sourceSlice: 0,
-                                     sourceLevel: 0,
-                                     sourceOrigin: MTLOrigin(x: Int(point.x), y: Int(point.y), z: 0),
-                                     sourceSize: MTLSizeMake(1, 1, 1),
-                                     to: sampleBuffer,
-                                     destinationOffset: sampleBufferOffset,
-                                     destinationBytesPerRow: 4,
-                                     destinationBytesPerImage: 4)
-                    blitEncoder.endEncoding()
+                if let ribbonRenderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: ribbonRenderPassDescriptor) {
+                    ribbonRenderEncoder.setRenderPipelineState(ribbonRenderState)
+                    ribbonRenderEncoder.setVertexBuffer(ribbonVertexBuffer, offset: ribbonVertexBufferOffset, index: RibbonBufferIndex.positions.rawValue)
+                    ribbonRenderEncoder.setVertexBuffer(ribbonColorsBuffer, offset: ribbonColorsBufferOffset, index: RibbonBufferIndex.colors.rawValue)
+                    ribbonRenderEncoder.setVertexBuffer(ribbonUniformsBuffer, offset: ribbonUniformsBufferOffset, index: RibbonBufferIndex.uniforms.rawValue)
+                    ribbonRenderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: ribbonIndexCount, indexType: .uint32, indexBuffer: ribbonIndexBuffer, indexBufferOffset: 0)
+                    ribbonRenderEncoder.endEncoding()
+                    
+                    // blend shadow with ribbon
+                    let computeKernel = commandBuffer.makeComputeCommandEncoder()!
+                    computeKernel.setComputePipelineState(blendKernelState)
+                    computeKernel.setTexture(shadowTexture, index: 0)
+                    computeKernel.setTexture(ribbonRenderTexture, index: 1)
+                    computeKernel.setTexture(view.currentDrawable!.texture, index: 2)
+                    let threadGroupSize = MTLSizeMake(16, 16, 1)
+                    let threadGroupCount = MTLSizeMake((shadowTexture.width + threadGroupSize.width - 1) / threadGroupSize.width,
+                                                       (shadowTexture.height + threadGroupSize.height - 1) / threadGroupSize.height,
+                                                       1)
+                    computeKernel.dispatchThreadgroups(threadGroupCount, threadsPerThreadgroup: threadGroupSize)
+                    computeKernel.endEncoding()
                 }
                 
-                if let drawable = view.currentDrawable {
-                    commandBuffer.present(drawable)
+                if let renderPassDescriptor = view.currentRenderPassDescriptor {
+                    renderPassDescriptor.colorAttachments[0].loadAction = .load
+                    renderPassDescriptor.depthAttachment.loadAction = .clear
+                    if let bodyRenderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) {
+                        // render body
+                        bodyRenderEncoder.setRenderPipelineState(renderState)
+                        bodyRenderEncoder.setCullMode(.back)
+                        bodyRenderEncoder.setFrontFacing(.counterClockwise)
+                        bodyRenderEncoder.setVertexBuffer(vertexBuffer, offset: vertexBufferOffset, index: BufferIndex.meshPositions.rawValue)
+                        bodyRenderEncoder.setVertexBuffer(uniformsBuffer, offset: uniformsBufferOffset, index: BufferIndex.uniforms.rawValue)
+                        bodyRenderEncoder.setFragmentBuffer(uniformsBuffer, offset: uniformsBufferOffset, index: BufferIndex.uniforms.rawValue)
+                        bodyRenderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: indexCount, indexType: .uint32, indexBuffer: indexBuffer, indexBufferOffset: 0)
+                        
+                        bodyRenderEncoder.popDebugGroup()
+                        bodyRenderEncoder.endEncoding()
+                    }
+                    
+                    if let point = samplePoint {
+                        let blitEncoder = commandBuffer.makeBlitCommandEncoder()!
+                        blitEncoder.copy(from: view.currentDrawable!.texture,
+                                         sourceSlice: 0,
+                                         sourceLevel: 0,
+                                         sourceOrigin: MTLOrigin(x: Int(point.x), y: Int(point.y), z: 0),
+                                         sourceSize: MTLSizeMake(1, 1, 1),
+                                         to: sampleBuffer,
+                                         destinationOffset: sampleBufferOffset,
+                                         destinationBytesPerRow: 4,
+                                         destinationBytesPerImage: 4)
+                        blitEncoder.endEncoding()
+                    }
                 }
-                
-                commandBuffer.commit()
             }
+            if let drawable = view.currentDrawable {
+                commandBuffer.present(drawable)
+            }
+            
+            commandBuffer.commit()
         }
     }
 }

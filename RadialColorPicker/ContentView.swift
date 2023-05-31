@@ -18,16 +18,20 @@ struct ContentView: View {
     }
     
     var body: some View {
-        VStack {
-            MTKViewContainer(renderer: renderer)
-                .frame(width: 500.0, height: 500.0)
-                .gesture(dragGesture)
-            SaturationSlider()
-                .frame(width: 400.0, height: 50.0)
-            BrightnessSlider()
-                .frame(width: 400.0, height: 50.0)
+        ZStack {
+            Image("T")
+                .resizable()
+                .background(.white)
+            VStack {
+                MTKViewContainer(renderer: renderer)
+                    .frame(width: 500.0, height: 500.0)
+                    .gesture(dragGesture)
+                SaturationSlider()
+                    .frame(width: 400.0, height: 50.0)
+                BrightnessSlider()
+                    .frame(width: 400.0, height: 50.0)
+            }
         }
-        .background(.gray)
     }
 }
 
