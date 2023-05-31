@@ -26,18 +26,11 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     
     var streams: [AnyCancellable] = []
     
+    var drawableWidth: Int!
+    var drawableHeight: Int!
+    
     let geometryURL: URL = Bundle.main.url(forResource: "Body", withExtension: "obj")!
-    var view: MTKView! {
-        didSet {
-            guard view != nil else { return }
-            
-            do {
-                try loadMetal()
-            } catch {
-                print("error loading metal: \(error.localizedDescription)")
-            }
-        }
-    }
+    var view: MTKView!
     var commandQueue: MTLCommandQueue!
     var _inFlightSemaphore = DispatchSemaphore(value: kMaxBuffersInFlight)
     
@@ -59,10 +52,10 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     var camera: Camera = .init(transform: .init(translationX: 0.040, translationY: 0.02, translationZ: -1.17))
     
     // light direction
-    var lightDirection: simd_float3 = [-1.0, 1.0, -1.0]
+    var lightDirection: simd_float3 = [0.5, 1.0, -1.0]
     
     // light color
-    var lightColor: simd_float3 = [0.4, 0.4, 0.4]
+    var lightColor: simd_float3 = [0.43, 0.43, 0.43]
     
     // color
     var color: simd_float3 = [1.0, 0.0, 0.0]
@@ -177,10 +170,10 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         guard point.x.isLessThanOrEqualTo(CGFloat(view.currentDrawable!.texture.width)) else { return }
         guard point.y.isLessThanOrEqualTo(CGFloat(view.currentDrawable!.texture.height)) else { return }
         
-        let r1: CGFloat = CGFloat(self.r1) * 100.0
-        let r2: CGFloat = CGFloat(self.r2) * 100.0
+        let r1: CGFloat = CGFloat(self.r1) * CGFloat(drawableWidth) / 10.0
+        let r2: CGFloat = CGFloat(self.r2) * CGFloat(drawableWidth) / 10.0
         
-        let origin = CGPoint(x: 500.0, y: 500.0)
+        let origin = CGPoint(x: view.drawableSize.width / view.contentScaleFactor, y: view.drawableSize.height / view.contentScaleFactor)
         let translatedPoint: CGPoint = .init(x: texSpacePoint.x - origin.x, y: texSpacePoint.y - origin.y)
         
         let d1sqr: CGFloat = (translatedPoint.x * translatedPoint.x + translatedPoint.y * translatedPoint.y)
@@ -200,7 +193,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         return .init(x: point.x * scale, y: point.y * scale)
     }
     
-    private func loadMetal() throws {
+    func loadMetal() throws {
         // initialize library
         let device = GPUDevice.shared
         let library = device.makeDefaultLibrary()!
@@ -225,15 +218,6 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         
         let renderStateDescriptor = MTLRenderPipelineDescriptor()
         renderStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
-        
-        renderStateDescriptor.colorAttachments[0].isBlendingEnabled = true
-        renderStateDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
-        renderStateDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
-        renderStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
-        renderStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusBlendAlpha
-        renderStateDescriptor.colorAttachments[0].alphaBlendOperation = .add
-        renderStateDescriptor.isAlphaToOneEnabled = false
-        //renderStateDescriptor.isAlphaToCoverageEnabled = true
         renderStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
         renderStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat
         renderStateDescriptor.vertexDescriptor = vertexDescriptor
@@ -283,16 +267,6 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         // initialize ribbon rendering state
         let ribbonRenderStateDescriptor = MTLRenderPipelineDescriptor()
         ribbonRenderStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
-        /*
-        ribbonRenderStateDescriptor.colorAttachments[0].isBlendingEnabled = true
-        ribbonRenderStateDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
-        ribbonRenderStateDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
-        ribbonRenderStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
-        ribbonRenderStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
-        ribbonRenderStateDescriptor.colorAttachments[0].alphaBlendOperation = .add*/
-        //ribbonRenderStateDescriptor.isAlphaToOneEnabled = false
-        //ribbonRenderStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
-        //ribbonRenderStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat
         ribbonRenderStateDescriptor.vertexFunction = ribbonVertexShader
         ribbonRenderStateDescriptor.fragmentFunction = ribbonFragmentShader
         ribbonRenderStateDescriptor.vertexDescriptor = ribbonVertexDescriptor
@@ -321,14 +295,6 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         shadowRenderStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
         shadowRenderStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat
         shadowRenderStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat
-        /*
-        shadowRenderStateDescriptor.colorAttachments[0].isBlendingEnabled = true
-        shadowRenderStateDescriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
-        shadowRenderStateDescriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
-        shadowRenderStateDescriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
-        shadowRenderStateDescriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusBlendAlpha
-        shadowRenderStateDescriptor.colorAttachments[0].alphaBlendOperation = .add
-        shadowRenderStateDescriptor.isAlphaToOneEnabled = false*/
         shadowRenderStateDescriptor.vertexFunction = shadowVertexShader
         shadowRenderStateDescriptor.fragmentFunction = shadowFragmentShader
         
@@ -338,8 +304,8 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         let ribbonRenderTextureDescriptor = MTLTextureDescriptor()
         ribbonRenderTextureDescriptor.usage = [.renderTarget, .shaderRead]
         ribbonRenderTextureDescriptor.pixelFormat = view.colorPixelFormat
-        ribbonRenderTextureDescriptor.width = 1000
-        ribbonRenderTextureDescriptor.height = 1000
+        ribbonRenderTextureDescriptor.width = drawableWidth
+        ribbonRenderTextureDescriptor.height = drawableHeight
         ribbonRenderTextureDescriptor.textureType = .type2D
         ribbonRenderTexture = device.makeTexture(descriptor: ribbonRenderTextureDescriptor)
         
@@ -368,8 +334,8 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         let shadowTextureDescriptor = MTLTextureDescriptor()
         shadowTextureDescriptor.usage = [.shaderRead, .renderTarget, .shaderWrite]
         shadowTextureDescriptor.textureType = .type2D
-        shadowTextureDescriptor.width = 1000
-        shadowTextureDescriptor.height = 1000
+        shadowTextureDescriptor.width = drawableWidth
+        shadowTextureDescriptor.height = drawableHeight
         shadowTextureDescriptor.pixelFormat = .bgra8Unorm
         
         shadowTexture = device.makeTexture(descriptor: shadowTextureDescriptor)
@@ -378,8 +344,8 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         shadowDepthTextureDescriptor.usage = [.renderTarget]
         shadowDepthTextureDescriptor.textureType = .type2D
         shadowDepthTextureDescriptor.storageMode = .private
-        shadowDepthTextureDescriptor.width = 1000
-        shadowDepthTextureDescriptor.height = 1000
+        shadowDepthTextureDescriptor.width = drawableWidth
+        shadowDepthTextureDescriptor.height = drawableHeight
         shadowDepthTextureDescriptor.pixelFormat = .depth32Float_stencil8
         shadowDepthTexture = device.makeTexture(descriptor: shadowDepthTextureDescriptor)
         
@@ -490,6 +456,9 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     
     // MARK: - MTKViewDelegate
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+        drawableWidth = Int(size.width)
+        drawableHeight = Int(size.height)
+        
         let aspectRatio = Float(size.width) / Float(size.height)
         projectionMatrix = matrix_perspective_left_hand(fovyRadians: .pi / 4.0, aspectRatio: aspectRatio, nearZ: 0.1, farZ: 100.0)
         
@@ -501,6 +470,11 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
                                                                top: height / 2.0,
                                                                bottom: -height / 2.0,
                                                                near: 0.0, far: 10.0)
+        do {
+            try loadMetal()
+        } catch {
+            print("error loading metal: \(error.localizedDescription)")
+        }
     }
     
     func draw(in view: MTKView) {

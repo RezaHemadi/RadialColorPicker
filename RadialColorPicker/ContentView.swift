@@ -24,7 +24,7 @@ struct ContentView: View {
                 .background(.white)
             VStack {
                 MTKViewContainer(renderer: renderer)
-                    .frame(width: 500.0, height: 500.0)
+                    .frame(width: 300.0, height: 300.0)
                     .gesture(dragGesture)
                 SaturationSlider()
                     .frame(width: 400.0, height: 50.0)

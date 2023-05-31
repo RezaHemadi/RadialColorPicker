@@ -46,7 +46,7 @@ float4 fragment fragmentShader(PassThroughVertex in [[stage_in]],
     float3 cameraPos = vector_float3(uniforms.cameraTransform.columns[3].x, uniforms.cameraTransform.columns[3].y, uniforms.cameraTransform.columns[3].z);
     float3 lightDirection = uniforms.lightDirection; // For Other Types of Light must be normalize(lightPos - FragPos)
     float3 viewDirectioin = normalize(cameraPos - in.fragWorldPos);
-    float3 halfwayDir = normalize(/*lightDirection +*/ viewDirectioin);
+    float3 halfwayDir = normalize(lightDirection + viewDirectioin);
     
     // Diffuse Term
     //float diffuseAmt = max(0.0, dot(uniforms.lightDirection, in.normal));
