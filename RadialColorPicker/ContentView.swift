@@ -8,30 +8,9 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var renderer: Renderer
-    
-    var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 0.0)
-            .onChanged { value in
-                renderer.samplePoint(value.location)
-            }
-    }
-    
+    @State var color: Color = Color.init(hue: 0.0, saturation: 1.0, brightness: 1.0)
     var body: some View {
-        ZStack {
-            Image("T")
-                .resizable()
-                .background(.white)
-            VStack {
-                MTKViewContainer(renderer: renderer)
-                    .frame(width: 300.0, height: 300.0)
-                    .gesture(dragGesture)
-                SaturationSlider()
-                    .frame(width: 400.0, height: 50.0)
-                BrightnessSlider()
-                    .frame(width: 400.0, height: 50.0)
-            }
-        }
+        RadialColorPickerView(color: $color)
     }
 }
 
