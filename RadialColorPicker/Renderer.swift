@@ -11,7 +11,6 @@ import Matrix
 import Transform
 import Combine
 import MetalPerformanceShaders
-import CoreGraphics
 
 let kMaxBuffersInFlight: Int = 3
 let kAlignedUniformsSize: Int = (MemoryLayout<Uniforms>.size & ~0xFF) + 0x100
@@ -59,7 +58,6 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     var lightColor: simd_float3 = [0.43, 0.43, 0.43]
     
     // color
-    //var color: simd_float3 = [1.0, 0.0, 0.0]
     @Published var color: UIColor
     private var rgbColor: [Float]
     
@@ -130,7 +128,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     var r2VertexBufferAddress: UnsafeMutableRawPointer!
     
     var shadowUniformsBuffer: MTLBuffer!
-    var shadowUniformsBufferOffset: Int!
+    var shadowUniformsBufferOffset: Int = 0
     var shadowUniformsBufferAddress: UnsafeMutableRawPointer!
     
     var shadowInstanceUniformsBuffer: MTLBuffer!
@@ -307,6 +305,20 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         indexBuffer = device.makeBuffer(bytes: F.valuesPtr.pointer, length: MemoryLayout<UInt32>.size * indexCount)
         uniformsBuffer = device.makeBuffer(length: kAlignedUniformsSize * kMaxBuffersInFlight)
         
+        // set vertex buffer
+        for n in 0..<kMaxBuffersInFlight {
+            let offset = (MemoryLayout<Float>.size * 6 * vertexCount * n)
+            let vBufferAddress = vertexBuffer.contents().advanced(by: offset)
+            
+            for i in 0..<vertexCount {
+                let xOffset = MemoryLayout<Float>.size * (6 * i)
+                let normalXOffset = MemoryLayout<Float>.size * (6 * i + 3)
+                
+                vBufferAddress.advanced(by: xOffset).assumingMemoryBound(to: Float.self).initialize(from: V.ptrRef(i, 0), count: 3)
+                vBufferAddress.advanced(by: normalXOffset).assumingMemoryBound(to: Float.self).initialize(from: N.ptrRef(i, 0), count: 3)
+            }
+        }
+        
         // configure ribbon rendering vertex descriptor
         let ribbonVertexDescriptor = MTLVertexDescriptor()
         ribbonVertexDescriptor.attributes[RibbonVertexAttribute.position.rawValue].format = .float3
@@ -428,10 +440,10 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     }
     
     func updateDynamicBuffer() {
-        dynamicBufferIndex = (dynamicBufferIndex + 1) % 3
+        dynamicBufferIndex = (dynamicBufferIndex + 1) % kMaxBuffersInFlight
         
         vertexBufferOffset = (MemoryLayout<Float>.size * 6 * vertexCount * dynamicBufferIndex)
-        vertexBufferAddress = vertexBuffer.contents().advanced(by: vertexBufferOffset)
+        //vertexBufferAddress = vertexBuffer.contents().advanced(by: vertexBufferOffset)
         
         uniformsBufferOffset = kAlignedUniformsSize * dynamicBufferIndex
         uniformsBufferAddress = uniformsBuffer.contents().advanced(by: uniformsBufferOffset)
@@ -461,6 +473,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     }
     
     func updateAppState() {
+        /*
         // update vertex buffer
         for i in 0..<vertexCount {
             let xOffset = MemoryLayout<Float>.size * (6 * i)
@@ -468,7 +481,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
             
             vertexBufferAddress.advanced(by: xOffset).assumingMemoryBound(to: Float.self).initialize(from: V.ptrRef(i, 0), count: 3)
             vertexBufferAddress.advanced(by: normalXOffset).assumingMemoryBound(to: Float.self).initialize(from: N.ptrRef(i, 0), count: 3)
-        }
+        }*/
         
         // update uniforms
         uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.projectionMatrix = projectionMatrix
@@ -591,10 +604,12 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
             updateDynamicBuffer()
             updateAppState()
             
+            
             if !shadowsInitialized {
                 renderShadows(commandBuffer: commandBuffer)
                 shadowsInitialized = true
             }
+            
             
             // render ribbon
             if let ribbonRenderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: ribbonRenderPassDescriptor) {
@@ -622,6 +637,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
             if let renderPassDescriptor = view.currentRenderPassDescriptor {
                 renderPassDescriptor.colorAttachments[0].loadAction = .load
                 renderPassDescriptor.depthAttachment.loadAction = .clear
+                
                 if let bodyRenderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) {
                     // render body
                     bodyRenderEncoder.setRenderPipelineState(renderState)
@@ -635,6 +651,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
                     bodyRenderEncoder.popDebugGroup()
                     bodyRenderEncoder.endEncoding()
                 }
+                
                 
                 if let point = samplePoint {
                     read = true
