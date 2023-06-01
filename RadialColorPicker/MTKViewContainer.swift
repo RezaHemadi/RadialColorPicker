@@ -14,6 +14,7 @@ struct MTKViewContainer: UIViewRepresentable {
     
     func makeUIView(context: Context) -> MTKView {
         let view = MTKView()
+        view.preferredFramesPerSecond = 60
         view.framebufferOnly = false
         view.isOpaque = false
         view.colorPixelFormat = .bgra8Unorm

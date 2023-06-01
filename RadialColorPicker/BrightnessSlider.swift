@@ -13,6 +13,20 @@ struct BrightnessSlider: View {
     @State var needleX: CGFloat = 0.0
     @State var sliderWidth: CGFloat?
     
+    var hue: Double {
+        let uiColor = UIColor(renderer.color)
+        var h: CGFloat = 0.0
+        uiColor.getHue(&h, saturation: nil, brightness: nil, alpha: nil)
+        return Double(h)
+    }
+    
+    var saturation: Double {
+        let uiColor = UIColor(renderer.color)
+        var s: CGFloat = 0.0
+        uiColor.getHue(nil, saturation: &s, brightness: nil, alpha: nil)
+        return Double(s)
+    }
+    
     var dragGesture: some Gesture {
         DragGesture(minimumDistance: 0.0)
             .onChanged { value in
@@ -49,8 +63,8 @@ struct BrightnessSlider: View {
                 path.move(to: .init(x: 0.0, y: midY))
                 path.addLine(to: .init(x: width, y: midY))
             }
-            .stroke(LinearGradient(colors: [Color.init(hue: renderer.hue, saturation: renderer.saturation, brightness: 0.0),
-                                            Color.init(hue: renderer.hue, saturation: renderer.saturation, brightness: 1.0)], startPoint: .leading, endPoint: .trailing),
+            .stroke(LinearGradient(colors: [Color.init(hue: hue, saturation: saturation, brightness: 0.0),
+                                            Color.init(hue: hue, saturation: saturation, brightness: 1.0)], startPoint: .leading, endPoint: .trailing),
                     style: StrokeStyle(lineWidth: 5.0, lineCap: .round, lineJoin: .round))
             .onAppear() {
                 sliderWidth = geometry.size.width

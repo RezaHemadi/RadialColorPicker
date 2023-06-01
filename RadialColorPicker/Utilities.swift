@@ -7,8 +7,24 @@
 
 import Foundation
 import Transform
+import SwiftUI
+
+func rgb(h: Float, s: Float, l: Float) -> [Float] {
+    let h = h / 360.0
+    print(h)
+    let color = Color(hue: Double(h), saturation: Double(s), brightness: Double(l))
+    var r: CGFloat = 0.0
+    var g: CGFloat = 0.0
+    var b: CGFloat = 0.0
+    
+    let uiColor = UIColor(color)
+    uiColor.getRed(&r, green: &g, blue: &b, alpha: nil)
+    
+    return [Float(r), Float(g), Float(b)]
+}
 
 /// h angle is in degrees, returns [0, 1] range
+/*
 func rgb(h: Float, s: Float, l: Float) -> [Float] {
     assert(!h.isLess(than: 0.0))
     
@@ -48,7 +64,7 @@ func rgb(h: Float, s: Float, l: Float) -> [Float] {
     }
     
     return [R, G, B]
-}
+} */
 
 // r g b values should be in [0, 255] range
 func hsl(r: Float, g: Float, b: Float) -> [Float] {

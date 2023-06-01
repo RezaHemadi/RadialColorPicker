@@ -13,6 +13,20 @@ struct SaturationSlider: View {
     @State var needleX: CGFloat = 0.0
     @State var sliderWidth: CGFloat?
     
+    var hue: Double {
+        let uiColor = UIColor(renderer.color)
+        var h: CGFloat = 0.0
+        uiColor.getHue(&h, saturation: nil, brightness: nil, alpha: nil)
+        return Double(h)
+    }
+    
+    var brightness: Double {
+        let uiColor = UIColor(renderer.color)
+        var b: CGFloat = 0.0
+        uiColor.getHue(nil, saturation: nil, brightness: &b, alpha: nil)
+        return Double(b)
+    }
+    
     var dragGesture: some Gesture {
         DragGesture(minimumDistance: 0.0)
             .onChanged { value in
@@ -51,8 +65,8 @@ struct SaturationSlider: View {
                 path.move(to: .init(x: 0.0, y: midY))
                 path.addLine(to: .init(x: width, y: midY))
             }
-            .stroke(LinearGradient(colors: [Color.init(hue: renderer.hue, saturation: 0.0, brightness: renderer.brightness),
-                                            Color.init(hue: renderer.hue, saturation: 1.0, brightness: renderer.brightness)],
+            .stroke(LinearGradient(colors: [Color.init(hue: hue, saturation: 0.0, brightness: brightness),
+                                            Color.init(hue: hue, saturation: 1.0, brightness: brightness)],
                                    startPoint: .leading,
                                    endPoint: .trailing),
                     style: StrokeStyle(lineWidth: 5.0, lineCap: .round, lineJoin: .round))

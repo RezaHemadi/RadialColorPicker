@@ -458,9 +458,6 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
             let newColor = Color.init(red: rgbcolor[0], green: rgbcolor[1], blue: rgbcolor[2])
             if newColor != self.color {
                 self.color = newColor
-                // update hue
-                let hsl = hsl(r: Float(rgbcolor[0] * 255), g: Float(rgbcolor[1] * 255), b: Float(rgbcolor[2] * 255))
-                if !hsl[0].isNaN { hue = Double(hsl[0]) }
             }
         }
         
