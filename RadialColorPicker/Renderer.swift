@@ -80,7 +80,6 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     var ribbonIndexCount: Int!
     /// Position - Normal
     var vertexBuffer: MTLBuffer!
-    var vertexBufferAddress: UnsafeMutableRawPointer!
     var vertexBufferOffset: Int = 0
     /// faces
     var indexBuffer: MTLBuffer!
@@ -91,7 +90,6 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     
     // ribbon buffers
     var ribbonVertexBuffer: MTLBuffer!
-    var ribbonVertexBufferAddress: UnsafeMutableRawPointer!
     var ribbonVertexBufferOffset: Int = 0
     
     var ribbonIndexBuffer: MTLBuffer!
@@ -348,6 +346,13 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         ribbonIndexBuffer = device.makeBuffer(bytes: ribbon.indices, length: ribbon.indices.count * MemoryLayout<UInt32>.size)
         ribbonIndexCount = ribbon.indices.count
         
+        // set ribbon vertex buffer
+        for n in 0..<kMaxBuffersInFlight {
+            let offset = MemoryLayout<Float>.size * ribbon.vertices.count * n
+            let address = ribbonVertexBuffer.contents().advanced(by: offset)
+            address.assumingMemoryBound(to: Float.self).initialize(from: ribbon.vertices, count: ribbon.vertices.count)
+        }
+        
         // initialize sample buffer
         sampleBuffer = device.makeBuffer(length: 4, options: .storageModeShared)
         
@@ -443,13 +448,11 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         dynamicBufferIndex = (dynamicBufferIndex + 1) % kMaxBuffersInFlight
         
         vertexBufferOffset = (MemoryLayout<Float>.size * 6 * vertexCount * dynamicBufferIndex)
-        //vertexBufferAddress = vertexBuffer.contents().advanced(by: vertexBufferOffset)
         
         uniformsBufferOffset = kAlignedUniformsSize * dynamicBufferIndex
         uniformsBufferAddress = uniformsBuffer.contents().advanced(by: uniformsBufferOffset)
         
         ribbonVertexBufferOffset = MemoryLayout<Float>.size * ribbon.vertices.count * dynamicBufferIndex
-        ribbonVertexBufferAddress = ribbonVertexBuffer.contents().advanced(by: ribbonVertexBufferOffset)
         
         ribbonColorsBufferOffset = MemoryLayout<Float>.size * ribbon.colors.count * dynamicBufferIndex
         ribbonColorsBufferAddress = ribbonColorsBuffer.contents().advanced(by: ribbonColorsBufferOffset)
@@ -473,16 +476,6 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     }
     
     func updateAppState() {
-        /*
-        // update vertex buffer
-        for i in 0..<vertexCount {
-            let xOffset = MemoryLayout<Float>.size * (6 * i)
-            let normalXOffset = MemoryLayout<Float>.size * (6 * i + 3)
-            
-            vertexBufferAddress.advanced(by: xOffset).assumingMemoryBound(to: Float.self).initialize(from: V.ptrRef(i, 0), count: 3)
-            vertexBufferAddress.advanced(by: normalXOffset).assumingMemoryBound(to: Float.self).initialize(from: N.ptrRef(i, 0), count: 3)
-        }*/
-        
         // update uniforms
         uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.projectionMatrix = projectionMatrix
         uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.transform = transform.matrix
@@ -492,8 +485,6 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.color = simd_float3(x: rgbColor[0], y: rgbColor[1], z: rgbColor[2])
         uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.lightColor = lightColor
         
-        // update ribbon vertex buffer
-        ribbonVertexBufferAddress.assumingMemoryBound(to: Float.self).initialize(from: ribbon.vertices, count: ribbon.vertices.count)
         // update ribbon colors buffer
         ribbonColorsBufferAddress.assumingMemoryBound(to: Float.self).initialize(from: ribbon.colors, count: ribbon.colors.count)
         // update ribbon uniforms
@@ -513,7 +504,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
             // update shadow instance uniforms
             shadowInstanceUniformsAddress.assumingMemoryBound(to: ShadowInstanceUniforms.self).pointee.color = [0.0, 0.0, 0.0, 0.0]
             shadowInstanceUniformsAddress.assumingMemoryBound(to: ShadowInstanceUniforms.self).pointee.transform = Transform.init(translation: [0.0, 0.0, 0.8]).matrix
-            shadowInstanceUniformsAddress.assumingMemoryBound(to: ShadowInstanceUniforms.self).advanced(by: 1).pointee.color = [0.1, 0.1, 0.1, 0.5]
+            shadowInstanceUniformsAddress.assumingMemoryBound(to: ShadowInstanceUniforms.self).advanced(by: 1).pointee.color = [0.0, 0.0, 0.0, 0.8]
             shadowInstanceUniformsAddress.assumingMemoryBound(to: ShadowInstanceUniforms.self).advanced(by: 1).pointee.transform = shadowTransform.matrix
         }
     }
@@ -539,7 +530,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
             shadowRenderEncoder.drawIndexedPrimitives(type: .triangle, indexCount: r2IndexCount, indexType: .uint32, indexBuffer: r2IndexBuffer, indexBufferOffset: 0, instanceCount: 2)
             shadowRenderEncoder.endEncoding()
             
-            let blur = MPSImageGaussianBlur(device: GPUDevice.shared, sigma: 12.0)
+            let blur = MPSImageGaussianBlur(device: GPUDevice.shared, sigma: 10.0)
             let inPlaceTexture: UnsafeMutablePointer<MTLTexture> = .allocate(capacity: 1)
             inPlaceTexture.initialize(to: shadowTexture)
             blur.encode(commandBuffer: commandBuffer, inPlaceTexture: inPlaceTexture)
