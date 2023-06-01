@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SaturationSlider: View {
-    @EnvironmentObject var renderer: Renderer
+    @ObservedObject var renderer: Renderer
     
     @State var needleX: CGFloat = 0.0
     @State var sliderWidth: CGFloat?
@@ -75,7 +75,7 @@ struct SaturationSlider_Previews: PreviewProvider {
         ZStack {
             Color.blue
             
-            SaturationSlider()
+            SaturationSlider(renderer: Renderer(color: .init(hue: 0.0, saturation: 1.0, brightness: 0.5)))
                 .frame(width: 500.0, height: 200.0)
         }
     }

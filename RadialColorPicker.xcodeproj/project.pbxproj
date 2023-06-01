@@ -11,6 +11,7 @@
 		F51CD6C42A25E132000BF5ED /* Polygon.swift in Sources */ = {isa = PBXBuildFile; fileRef = F51CD6C32A25E132000BF5ED /* Polygon.swift */; };
 		F51CD6C82A2644AF000BF5ED /* Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = F51CD6C72A2644AF000BF5ED /* Utilities.swift */; };
 		F5975A282A26A02E008156D1 /* SaturationSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5975A272A26A02E008156D1 /* SaturationSlider.swift */; };
+		F5CBB2C12A28960D001C68E0 /* RadialColorPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5CBB2C02A28960D001C68E0 /* RadialColorPickerView.swift */; };
 		F5DCEB3E2A24DFA400D4C0E7 /* RadialColorPickerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB3D2A24DFA400D4C0E7 /* RadialColorPickerApp.swift */; };
 		F5DCEB402A24DFA400D4C0E7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DCEB3F2A24DFA400D4C0E7 /* ContentView.swift */; };
 		F5DCEB422A24DFA500D4C0E7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F5DCEB412A24DFA500D4C0E7 /* Assets.xcassets */; };
@@ -66,6 +67,7 @@
 		F51CD6C32A25E132000BF5ED /* Polygon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Polygon.swift; sourceTree = "<group>"; };
 		F51CD6C72A2644AF000BF5ED /* Utilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utilities.swift; sourceTree = "<group>"; };
 		F5975A272A26A02E008156D1 /* SaturationSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaturationSlider.swift; sourceTree = "<group>"; };
+		F5CBB2C02A28960D001C68E0 /* RadialColorPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadialColorPickerView.swift; sourceTree = "<group>"; };
 		F5DCEB3A2A24DFA400D4C0E7 /* RadialColorPicker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RadialColorPicker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5DCEB3D2A24DFA400D4C0E7 /* RadialColorPickerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadialColorPickerApp.swift; sourceTree = "<group>"; };
 		F5DCEB3F2A24DFA400D4C0E7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -122,6 +124,7 @@
 				F5DCFDB52A2729AD0071C0AD /* Body.obj */,
 				F5DCEB3D2A24DFA400D4C0E7 /* RadialColorPickerApp.swift */,
 				F5DCEB3F2A24DFA400D4C0E7 /* ContentView.swift */,
+				F5CBB2C02A28960D001C68E0 /* RadialColorPickerView.swift */,
 				F5975A272A26A02E008156D1 /* SaturationSlider.swift */,
 				F5DCFDB92A2743B10071C0AD /* BrightnessSlider.swift */,
 				F5DCEB412A24DFA500D4C0E7 /* Assets.xcassets */,
@@ -276,6 +279,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F5DCEB402A24DFA400D4C0E7 /* ContentView.swift in Sources */,
+				F5CBB2C12A28960D001C68E0 /* RadialColorPickerView.swift in Sources */,
 				F5DCEB642A24EB8C00D4C0E7 /* ModelIOTools.swift in Sources */,
 				F51CD6C82A2644AF000BF5ED /* Utilities.swift in Sources */,
 				F5DCEB4D2A24DFC700D4C0E7 /* Renderer.swift in Sources */,

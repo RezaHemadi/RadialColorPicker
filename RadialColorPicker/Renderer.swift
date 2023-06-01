@@ -11,6 +11,8 @@ import Matrix
 import Transform
 import Combine
 import MetalPerformanceShaders
+import SwiftUI
+import CoreGraphics
 
 let kMaxBuffersInFlight: Int = 3
 let kAlignedUniformsSize: Int = (MemoryLayout<Uniforms>.size & ~0xFF) + 0x100
@@ -58,7 +60,9 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     var lightColor: simd_float3 = [0.43, 0.43, 0.43]
     
     // color
-    var color: simd_float3 = [1.0, 0.0, 0.0]
+    //var color: simd_float3 = [1.0, 0.0, 0.0]
+    @Published var color: Color
+    private var rgbColor: [Float]
     
     // geometry
     var V = Mat<Float>()
@@ -149,9 +153,19 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     var blendKernelState: MTLComputePipelineState!
     
     // MARK: - Initialization
-    override init() {
-        super.init()
+    init(color: Color) {
+        print("initializing renderer")
+        self.color = color
+        let uiColor = UIColor(color)
         
+        var r: CGFloat = 0.0
+        var g: CGFloat = 0.0
+        var b: CGFloat = 0.0
+        var a: CGFloat = 0.0
+        guard uiColor.getRed(&r, green: &g, blue: &b, alpha: &a) else { fatalError() }
+        rgbColor = [Float(r), Float(g), Float(b)]
+        
+        super.init()
         let stream_s = $saturation.sink { value in
             self.ribbon?.updateColors(s: Float(value), l: Float(self.brightness))
         }
@@ -161,7 +175,25 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
             self.ribbon?.updateColors(s: Float(self.saturation), l: Float(value))
         }
         stream_l.store(in: &streams)
+        
+        let stream_col = $color.sink { col in
+            self.rgbColor = self.getRGB(col)
+        }
+        stream_col.store(in: &streams)
     }
+    /*
+    override init() {
+        super.init()
+        let stream_s = $saturation.sink { value in
+            self.ribbon?.updateColors(s: Float(value), l: Float(self.brightness))
+        }
+        stream_s.store(in: &streams)
+        
+        let stream_l = $brightness.sink { value in
+            self.ribbon?.updateColors(s: Float(self.saturation), l: Float(value))
+        }
+        stream_l.store(in: &streams)
+    }*/
     
     // MARK: - Methods
     func samplePoint(_ point: CGPoint) {
@@ -187,6 +219,17 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     }
     
     // MARK: - Helper Methods
+    private func getRGB(_ color: Color) -> [Float] {
+        let uiColor = UIColor(color)
+        
+        var r: CGFloat = 0.0
+        var g: CGFloat = 0.0
+        var b: CGFloat = 0.0
+        var a: CGFloat = 0.0
+        guard uiColor.getRed(&r, green: &g, blue: &b, alpha: &a) else { fatalError() }
+        return [Float(r), Float(g), Float(b)]
+    }
+    
     private func convertToTextureSpace(_ point: CGPoint) -> CGPoint {
         let scale = view.contentScaleFactor
         
@@ -282,6 +325,12 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         
         // initialize sample buffer
         sampleBuffer = device.makeBuffer(length: 4 * kMaxBuffersInFlight, options: .storageModeShared)
+        
+        let normalizedColor: [UInt8] = [UInt8(rgbColor[0] * 255.0), UInt8(rgbColor[1] * 255.0), UInt8(rgbColor[2] * 255.0), 255]
+        for i in 0..<kMaxBuffersInFlight {
+            let offset = 4 * i
+            sampleBuffer.contents().advanced(by: offset).assumingMemoryBound(to: UInt8.self).initialize(from: normalizedColor, count: normalizedColor.count)
+        }
         
         // initialize shadow render state
         let shadowVertexDescriptor = MTLVertexDescriptor()
@@ -405,11 +454,14 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
             let b: UInt8 = pointer.assumingMemoryBound(to: UInt8.self).pointee
             let g: UInt8 = pointer.assumingMemoryBound(to: UInt8.self).advanced(by: 1).pointee
             let r: UInt8 = pointer.assumingMemoryBound(to: UInt8.self).advanced(by: 2).pointee
-            color = [Float(r) / 255.0, Float(g) / 255.0, Float(b) / 255.0]
-            
-            // update hue
-            let hsl = hsl(r: color[0] * 255, g: color[1] * 255, b: color[2] * 255)
-            if !hsl[0].isNaN { hue = Double(hsl[0]) }
+            let rgbcolor = [Double(r) / 255.0, Double(g) / 255.0, Double(b) / 255.0]
+            let newColor = Color.init(red: rgbcolor[0], green: rgbcolor[1], blue: rgbcolor[2])
+            if newColor != self.color {
+                self.color = newColor
+                // update hue
+                let hsl = hsl(r: Float(rgbcolor[0] * 255), g: Float(rgbcolor[1] * 255), b: Float(rgbcolor[2] * 255))
+                if !hsl[0].isNaN { hue = Double(hsl[0]) }
+            }
         }
         
         // update vertex buffer
@@ -427,7 +479,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
         uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.viewMatrix = camera.viewMatrix
         uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.cameraTransform = camera.transform.matrix
         uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.lightDirection = lightDirection
-        uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.color = color
+        uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.color = simd_float3(x: rgbColor[0], y: rgbColor[1], z: rgbColor[2])
         uniformsBufferAddress.assumingMemoryBound(to: Uniforms.self).pointee.lightColor = lightColor
         
         // update ribbon vertex buffer
@@ -456,6 +508,7 @@ class Renderer: NSObject, ObservableObject, MTKViewDelegate {
     
     // MARK: - MTKViewDelegate
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+        self.view = view
         drawableWidth = Int(size.width)
         drawableHeight = Int(size.height)
         

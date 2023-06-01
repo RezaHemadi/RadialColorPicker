@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct BrightnessSlider: View {
-    @EnvironmentObject var renderer: Renderer
+    @ObservedObject var renderer: Renderer
     
     @State var needleX: CGFloat = 0.0
     @State var sliderWidth: CGFloat?
@@ -69,6 +69,6 @@ struct BrightnessSlider: View {
 
 struct BrightnessSlider_Previews: PreviewProvider {
     static var previews: some View {
-        BrightnessSlider()
+        BrightnessSlider(renderer: Renderer(color: .init(hue: 0.0, saturation: 1.0, brightness: 0.5)))
     }
 }
