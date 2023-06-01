@@ -14,25 +14,40 @@ struct BrightnessSlider: View {
     @State var sliderWidth: CGFloat?
     
     var hue: Double {
-        let uiColor = UIColor(renderer.color)
         var h: CGFloat = 0.0
-        uiColor.getHue(&h, saturation: nil, brightness: nil, alpha: nil)
+        renderer.color.getHue(&h, saturation: nil, brightness: nil, alpha: nil)
         return Double(h)
     }
     
     var saturation: Double {
-        let uiColor = UIColor(renderer.color)
         var s: CGFloat = 0.0
-        uiColor.getHue(nil, saturation: &s, brightness: nil, alpha: nil)
+        renderer.color.getHue(nil, saturation: &s, brightness: nil, alpha: nil)
         return Double(s)
+    }
+    
+    var brighness: Double {
+        var b: CGFloat = 0.0
+        renderer.color.getHue(nil, saturation: nil, brightness: &b, alpha: nil)
+        return Double(b)
     }
     
     var dragGesture: some Gesture {
         DragGesture(minimumDistance: 0.0)
             .onChanged { value in
                 withAnimation {
-                    guard value.location.x.isLess(than: sliderWidth!) else { return }
-                    guard !value.location.x.isLess(than: 0.0) else { return }
+                    guard value.location.x.isLess(than: sliderWidth!) else {
+                        needleX = sliderWidth!
+                        renderer.brightness = getBrightness(needleX)
+                        
+                        return
+                    }
+                    
+                    guard !value.location.x.isLess(than: 0.0) else {
+                        needleX = 0.0
+                        renderer.brightness = getBrightness(0.0)
+                        
+                        return
+                    }
                     
                     needleX = value.location.x
                     if sliderWidth != nil {
@@ -42,11 +57,24 @@ struct BrightnessSlider: View {
             }
             .onEnded { value in
                 withAnimation {
-                    guard value.location.x.isLess(than: sliderWidth!) else { return }
-                    guard !value.location.x.isLess(than: 0.0) else { return }
+                    guard value.location.x.isLess(than: sliderWidth!) else {
+                        needleX = sliderWidth!
+                        renderer.brightness = getBrightness(needleX)
+                        
+                        return
+                    }
+                    
+                    guard !value.location.x.isLess(than: 0.0) else {
+                        needleX = 0.0
+                        renderer.brightness = getBrightness(0.0)
+                        
+                        return
+                    }
                     
                     needleX = value.location.x
-                    
+                    if sliderWidth != nil {
+                        renderer.brightness = getBrightness(value.location.x)
+                    }
                 }
             }
     }
@@ -68,7 +96,10 @@ struct BrightnessSlider: View {
                     style: StrokeStyle(lineWidth: 5.0, lineCap: .round, lineJoin: .round))
             .onAppear() {
                 sliderWidth = geometry.size.width
-                needleX = geometry.size.width * renderer.brightness
+                needleX = geometry.size.width * brighness
+            }
+            .onChange(of: renderer.color) { _ in
+                needleX = geometry.size.width * brighness
             }
             
             Image("SliderNeedle")
@@ -83,6 +114,6 @@ struct BrightnessSlider: View {
 
 struct BrightnessSlider_Previews: PreviewProvider {
     static var previews: some View {
-        BrightnessSlider(renderer: Renderer(color: .init(hue: 0.0, saturation: 1.0, brightness: 0.5)))
+        BrightnessSlider(renderer: Renderer(color: .init(hue: 0.0, saturation: 1.0, brightness: 0.5, alpha: 1.0)))
     }
 }

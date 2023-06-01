@@ -11,7 +11,6 @@ import SwiftUI
 
 func rgb(h: Float, s: Float, l: Float) -> [Float] {
     let h = h / 360.0
-    print(h)
     let color = Color(hue: Double(h), saturation: Double(s), brightness: Double(l))
     var r: CGFloat = 0.0
     var g: CGFloat = 0.0
