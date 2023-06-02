@@ -41,6 +41,10 @@ struct RadialColorPickerView: View {
                     color = Color(uiColor: newValue)
                     hex = "#" + (color.toHex() ?? "")
                 }
+                .onChange(of: color) { newValue in
+                    renderer.color = UIColor(newValue)
+                    hex = "#" + (color.toHex() ?? "")
+                }
             
             ZStack {
                 RoundedRectangle(cornerRadius: 10.0)
